@@ -2,7 +2,6 @@ from typing import Callable
 
 import numpy as np
 from numpy import ndarray
-from progress.bar import Bar
 
 
 def find_routing_matrix(omega: ndarray,
@@ -35,7 +34,6 @@ def find_routing_matrix(omega: ndarray,
         потоков.
 
     """
-    bar = Bar("Progress", max=max_it)
 
     # шаг 1: определяем начальную маршрутную матрицу
     theta = get_initial_theta(w, omega)
@@ -56,7 +54,6 @@ def find_routing_matrix(omega: ndarray,
     # итерационно, пока не будет достигнута минимальная погрешность, производится изменение весовых коэффициентов
     while any(list(abs(x) > eps for x in out_omega - omega)) and it < max_it:
         it += 1
-        bar.next()
 
         out_omega = omega.dot(theta)
         error = np.zeros(col_count)
@@ -98,8 +95,6 @@ def find_routing_matrix(omega: ndarray,
             print("Delta:", delta)
             print("Error:", error)
             print("Theta\n", theta, "\n")
-
-    bar.finish()
 
     print(f"Итерация {it} (последняя):")
     print("Полученная омега:", out_omega)

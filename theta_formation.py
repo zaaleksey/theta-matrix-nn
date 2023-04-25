@@ -9,7 +9,7 @@ def find_routing_matrix(omega: ndarray,
                         get_initial_theta: Callable,
                         eps: float = 10 ** (-10),
                         log_step: int = 0,
-                        max_it: int = 10_000_000) -> tuple[ndarray, ndarray]:
+                        max_it: int = 100_000) -> tuple[ndarray, ndarray, int]:
     """
     Функция реализующая метод формирования маршрутной матрицы СеМо
     с заданным вектором относительных интенсивностей потоков
@@ -17,16 +17,13 @@ def find_routing_matrix(omega: ndarray,
 
     Parameters:
         omega: вектор относительных интенсивностей потоков
-        w: матрица смежности, определяющая топологию сети о
-        бслуживания
+        w: матрица смежности, определяющая топологию сети обслуживания
         get_initial_theta: функция, которая должна вернуть начальную матрицу (имеет два параметра)
         eps: точность при определение вектора omega уравнением
         omega = omega * theta,
         по умолчанию имеет значение 10 ** (-10)
-        log_step: параметр, отвечающая за шаг логирование в
-        процессе работы метода,
-        если параметр равен 0 - логирование не производится,
-        по умолчанию имеет значение 0
+        log_step: параметр, отвечающая за шаг логирование в процессе работы метода,
+        если параметр равен 0 - логирование не производится, по умолчанию имеет значение 0
         max_it: максимальное число воозмможных итераций, если решение не будет найдено, будет вывдена приближенныя матрица
 
     Returns:
@@ -37,8 +34,8 @@ def find_routing_matrix(omega: ndarray,
 
     # шаг 1: определяем начальную маршрутную матрицу
     theta = get_initial_theta(w, omega)
-    print("Омега: ", omega)
-    print("Начальная маршрутная матрица theta имеет следующиий вид:\n", theta, "\n")
+    # print("Омега: ", omega)
+    # print("Начальная маршрутная матрица theta имеет следующиий вид:\n", theta, "\n")
 
     row_count, col_count = theta.shape[0], theta.shape[1]
 
@@ -83,7 +80,6 @@ def find_routing_matrix(omega: ndarray,
                     if (i, j) not in fixed:
                         theta[i][j] += (abs(np.min(theta)) * 2)
 
-        # шаг 4: нормализуем строки маршрутной матрицы
         for i in range(row_count):
             s = sum(theta[i])
             for j in range(col_count):
@@ -97,11 +93,7 @@ def find_routing_matrix(omega: ndarray,
             print("Theta\n", theta, "\n")
 
     print(f"Итерация {it} (последняя):")
-    print("Полученная омега:", out_omega)
-    print("Разница омег:", delta)
-    print("Ошибка:", error)
-    print("Theta\n", theta, "\n")
-    return theta, out_omega
+    return theta, out_omega, it
 
 
 def get_uniform_initial_theta(w: ndarray, omega: ndarray) -> ndarray:
@@ -116,5 +108,22 @@ def get_uniform_initial_theta(w: ndarray, omega: ndarray) -> ndarray:
         for j in range(col_count):
             if w[i][j] == 1:
                 theta[i][j] = 1 / non_zero_elements[i]  # равномерное распределние элементов матрицы
+
+    return theta
+
+
+def get_initial_theta(w: ndarray, omega: ndarray) -> ndarray:
+    row_count, col_count = w.shape[0], w.shape[1]
+    theta = np.zeros((row_count, col_count))
+
+    for i in range(row_count):
+        for j in range(col_count):
+            if w[i][j] == 1:
+                theta[i][j] = omega[j]
+
+    for i in range(row_count):
+        s = sum(theta[i])
+        for j in range(col_count):
+            theta[i][j] /= s
 
     return theta

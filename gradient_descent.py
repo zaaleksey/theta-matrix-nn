@@ -9,7 +9,7 @@ def gradient_descent(omega: ndarray,
                      get_initial_theta: Callable,
                      eps: float = 10 ** (-10),
                      log_step: int = 0,
-                     max_it: int = 100_000) -> tuple[ndarray, ndarray, list[float], int]:
+                     max_it: int = 2_000) -> tuple[ndarray, ndarray, list[float], int]:
     """
     Функция, реализующая метод формирования маршрутной матрицы СеМо
     с заданным вектором относительных интенсивностей потоков
@@ -41,16 +41,16 @@ def gradient_descent(omega: ndarray,
 
     """
 
-    assert sum(omega) == 1, "Сумма вектора omega должна быть равна единицы"
+    # assert sum(omega) == 1, "The sum of the omega vector must be equal to one."
 
-    # шаг 1.
+    # step 1.
     theta = get_initial_theta(w, omega)
     # print("Омега: ", omega)
     # print("Начальная маршрутная матрица theta имеет следующий вид:\n", theta, "\n")
 
     row_count, col_count = theta.shape[0], theta.shape[1]
 
-    # шаг 2.
+    # step 2.
     fixed = set()
     for i in range(row_count):
         for j in range(col_count):
@@ -65,7 +65,7 @@ def gradient_descent(omega: ndarray,
     while any(list(abs(x) > eps for x in out_omega - omega)) and it < max_it:
         it += 1
 
-        # шаг 3.
+        # step 3.
         out_omega = omega.dot(theta)
         delta = np.array(out_omega - omega)
         error = sum([float(d) ** 2 for d in delta]) / 2
@@ -77,10 +77,10 @@ def gradient_descent(omega: ndarray,
                 if (i, j) in fixed:
                     weight_deltas[i][j] = 0
 
-        # шаг 4.
+        # step 4.
         theta -= weight_deltas
 
-        # шаг 5.
+        # step 5.
         if np.min(theta) < 0:
             for i in range(row_count):
                 for j in range(col_count):

@@ -9,7 +9,7 @@ def conjugate(omega: ndarray,
               get_initial_theta: Callable,
               eps: float = 10 ** (-10),
               log_step: int = 0,
-              max_it: int = 100_000) -> tuple[ndarray, ndarray, list[float], int]:
+              max_it: int = 2_000) -> tuple[ndarray, ndarray, list[float], int]:
     """
     Функция, реализующая метод формирования маршрутной матрицы СеМо
     с заданным вектором относительных интенсивностей потоков
@@ -19,10 +19,10 @@ def conjugate(omega: ndarray,
         Шаг 1. Определяем начальную маршрутную матрицу (инициализируем веса);
         Шаг 2. Определяем элементы маршрутной матрицы, которые не должны меняться (фиксированные элементы);
         Шаг 3. Вычисляем ошибку и её изменение на входных данных;
-        Шаг 4. Вычисляем значение градиента функции потери;
+        Шаг 4. Определяем коэффициент скорости обучения;
         Шаг 5. Определяем изменения (дельту) весовых коэффициентов;
         Шаг 6. Производим изменение коэффициентов маршрутной матрицы;
-        Шаг 7. Корректируем скорость обучения;
+        Шаг 7. После предыдущего шага необходимо нормализовать вероятностные коэффициенты маршрутной матрицы;
         Шаг 8. Проверяем условие остановки: если входной и выходной вектора omega имеют незначительную разницу (eps)
         или достигнуто максимальное число итераций, то завершаем алгоритм, иначе переходим к шагу 3.
 
@@ -43,13 +43,13 @@ def conjugate(omega: ndarray,
 
     """
 
-    assert sum(omega) == 1, "Сумма вектора omega должна быть равна единицы"
+    # assert sum(omega) == 1, "The sum of the omega vector must be equal to one."
 
-    # шаг 1.
+    # step 1.
     theta = get_initial_theta(w, omega)
     row_count, col_count = theta.shape[0], theta.shape[1]
 
-    # шаг 2.
+    # step 2.
     fixed = set()
     for i in range(row_count):
         for j in range(col_count):
@@ -65,34 +65,34 @@ def conjugate(omega: ndarray,
         it += 1
         k = 0
 
-        # шаг 3.
-        delta_prev = out_omega - omega
+        # step 3.
+        delta_prev = np.array(out_omega - omega)
         out_omega = omega.dot(theta)
-        delta = out_omega - omega
+        delta = np.array(out_omega - omega)
         error = sum(map(lambda x: x ** 2, delta)) / 2
         errors.append(error)
 
-        alpha = find_alpha(theta, omega, -error)
+        # step 4.
+        alpha = find_alpha(theta, omega, error)
+        p = delta
 
-        if k == 0:
-            weight_deltas = np.zeros(row_count, col_count)
-            beta = 0
-            p = delta
+        weight_deltas = np.outer(omega, delta)
+        beta = (np.transpose(delta).dot(delta)) / (np.transpose(delta_prev).dot(delta_prev))
+        p = delta + beta * p
 
-        if k + 1 > n:
-            beta = 0
-            p = delta
-        else:
-            delta_prev = np.array(delta_prev)
-            delta = np.array(delta)
-            beta = (np.transpose(delta).dot(delta)) / (np.transpose(delta_prev).dot(delta_prev))
-            p = delta + beta * p
-
+        # step 5.
         weight = np.copy(theta)
         weight_deltas = alpha * (p + weight) + weight_deltas
 
+        for i in range(row_count):
+            for j in range(col_count):
+                if (i, j) in fixed:
+                    weight_deltas[i][j] = 0
+
+        # step 6.
         theta -= weight_deltas
 
+        # step 7.
         if np.min(theta) < 0:
             for i in range(row_count):
                 for j in range(col_count):
@@ -109,7 +109,7 @@ def conjugate(omega: ndarray,
 
 def find_alpha(theta, inp, p):
     alpha, min_f = float("inf"), float("inf")
-    for a in np.arange(0, 2, 0.05):
+    for a in np.arange(0, 1, 0.01):
         w = np.copy(theta)
         w += a * p
         out = inp.dot(w)

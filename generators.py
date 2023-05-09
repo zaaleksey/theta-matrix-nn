@@ -3,6 +3,10 @@ import random
 import numpy as np
 from numpy import ndarray
 
+from conjugate_gradient import conjugate
+from gradient_descent import gradient_descent
+from initial_theta import get_uniform_initial_theta
+
 
 def get_random_w(n: int) -> ndarray:
     w = np.zeros((n, n))
@@ -26,3 +30,19 @@ def get_omegas(min_systems: int, max_systems: int, count: int) -> list[ndarray]:
             omegas.append(np.array(omega))
 
     return omegas
+
+
+def generate_good_omegas(min_count, max_count, count, max_iter=2_000):
+    good_omegas = []
+    omegas = get_omegas(min_count, max_count, count)
+    for omega in omegas:
+        for _ in range(20):
+            w = get_random_w(len(omega))
+            _, _, _, it1 = gradient_descent(omega, w, get_uniform_initial_theta, max_it=max_iter)
+            _, _, _, it2 = conjugate(omega, w, get_uniform_initial_theta, max_it=max_iter)
+
+            if it1 != max_iter and it2 != max_iter and sum(omega) == 1:
+                good_omegas.append(omega)
+                break
+
+    return good_omegas

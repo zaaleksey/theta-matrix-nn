@@ -43,13 +43,13 @@ def conjugate(omega: ndarray,
 
     """
 
-    # assert sum(omega) == 1, "The sum of the omega vector must be equal to one."
+    assert sum(omega) == 1, "Сумма вектора omega должна равняться единицы."
 
-    # step 1.
+    # шаг 1.
     theta = get_initial_theta(w, omega)
     row_count, col_count = theta.shape[0], theta.shape[1]
 
-    # step 2.
+    # шаг 2.
     fixed = set()
     for i in range(row_count):
         for j in range(col_count):
@@ -60,19 +60,18 @@ def conjugate(omega: ndarray,
     it = 0
     errors = []
     out_omega = omega.dot(theta)
-    n = row_count * col_count
     while any(list(abs(x) > eps for x in out_omega - omega)) and it < max_it:
         it += 1
         k = 0
 
-        # step 3.
+        # шаг 3.
         delta_prev = np.array(out_omega - omega)
         out_omega = omega.dot(theta)
         delta = np.array(out_omega - omega)
         error = sum(map(lambda x: x ** 2, delta)) / 2
         errors.append(error)
 
-        # step 4.
+        # шаг 4.
         alpha = find_alpha(theta, omega, error)
         p = delta
 
@@ -80,7 +79,7 @@ def conjugate(omega: ndarray,
         beta = (np.transpose(delta).dot(delta)) / (np.transpose(delta_prev).dot(delta_prev))
         p = delta + beta * p
 
-        # step 5.
+        # шаг 5.
         weight = np.copy(theta)
         weight_deltas = alpha * (p + weight) + weight_deltas
 
@@ -89,10 +88,10 @@ def conjugate(omega: ndarray,
                 if (i, j) in fixed:
                     weight_deltas[i][j] = 0
 
-        # step 6.
+        # шаг 6.
         theta -= weight_deltas
 
-        # step 7.
+        # шаг 7.
         if np.min(theta) < 0:
             for i in range(row_count):
                 for j in range(col_count):
